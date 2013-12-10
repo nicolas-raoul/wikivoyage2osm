@@ -24,9 +24,9 @@ REGEX_EMAIL="^${REGEX_EMAIL_CHAR}+(\.${REGEX_EMAIL_CHAR}+)*@([[:alnum:]]([[:alnu
 REGEX_URL='^((https?|ftp|file):)?//[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]$' # http://stackoverflow.com/a/3184819 plus no-protocol
 REGEX_LAT='^[-+]?([1-8]?[0-9](\.[0-9]+)?|90(\.0+)?)$' # http://stackoverflow.com/a/18690202
 REGEX_LONG='^[-+]?(180(\.0+)?|((1[0-7][0-9])|([1-9]?[0-9]))(\.[0-9]+)?)$' # http://stackoverflow.com/a/18690202
-REGEX_TIME='(1?[0-9](:[0-9]{2}?)[A|P]M|[012][0-9]:[0-9]{2}|noon|midnight)'
+REGEX_TIME='(1?[0-9](:[0-9]{2})?[A|P]M|[012][0-9]:[0-9]{2}|noon|midnight)'
 REGEX_TIMESPAN="([MTWTFSau-]+ )?${TIME}[-–]${TIME}"
-REGEX_HOURS="^(${REGEX_TIMESPAN}(, ${REGEX_TIMESPAN})*|24 hours daily)$"
+REGEX_HOURS="^(${REGEX_TIMESPAN}(, ${REGEX_TIMESPAN})*|24 hours daily)$" # https://en.wikivoyage.org/wiki/Wikivoyage:Time_and_date_formats
 REGEX_CHECKIN="^${TIME}$"
 
 # Initialize output.
@@ -76,17 +76,17 @@ while read LINE; do
     echo $TITLE
     LINK_TITLE=`echo $TITLE | tr " " "_"`
   else
-  ID=`expr $ID + 1`
 
+  # Extract all data from the Wikivoyage POI listing
   # Explanation:
-  # Extract the information: sed -e "s/.*name[[:space:]]*=[[:space:]]*\([^|]*\).*/\1/"
+  # Get the value of the attribute we want: sed -e "s/.*name[[:space:]]*=[[:space:]]*\([^|]*\).*/\1/"
   # Skip if information is not present: grep -v "{{"
   # Remove leading/trailing whitespace: sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g'
-  # Remove Left-to-Right mark character: sed -e 's/\xe2\x80\x8e//'
+  # Remove Left-to-Right mark character as it is implicit: sed -e 's/\xe2\x80\x8e//'
   NAME=`echo $LINE | sed -e "s/.*name[[:space:]]*=[[:space:]]*\([^|]*\).*/\1/" | grep -v "{{" | sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g'`
   ALT=`echo $LINE | sed -e "s/.*alt[[:space:]]*=[[:space:]]*\([^|]*\).*/\1/" | grep -v "{{" | sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g'`
   ADDRESS=`echo $LINE | sed -e "s/.*address[[:space:]]*=[[:space:]]*\([^|]*\).*/\1/" | grep -v "{{" | sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g'`
-  DIRECIONS=`echo $LINE | sed -e "s/.*directions[[:space:]]*=[[:space:]]*\([^|]*\).*/\1/" | grep -v "{{" | sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g'`
+  DIRECTIONS=`echo $LINE | sed -e "s/.*directions[[:space:]]*=[[:space:]]*\([^|]*\).*/\1/" | grep -v "{{" | sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g'`
   PHONE=`echo $LINE | sed -e "s/.*phone[[:space:]]*=[[:space:]]*\([^|]*\).*/\1/" | grep -v "{{" | sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g' | sed -e 's/\xe2\x80\x8e//'`
   TOLLFREE=`echo $LINE | sed -e "s/.*tollfree[[:space:]]*=[[:space:]]*\([^|]*\).*/\1/" | grep -v "{{" | sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g' | sed -e 's/\xe2\x80\x8e//'`
   EMAIL=`echo $LINE | sed -e "s/.*email[[:space:]]*=[[:space:]]*\([^|]*\).*/\1/" | grep -v "{{" | sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g'`
@@ -158,8 +158,60 @@ while read LINE; do
   then 
     echo "# $EDIT_PREFIX$LINK_TITLE$EDIT_MIDDLE$TITLE$EDIT_SUFFIX (checkout) $CHECKOUT" >> $INVALID_CHECKINOUT
   fi
+  # TODO Check image
 
-  # TODO output to OSM file
+  # TODO Extract $TYPE $DESCRIPTION
+
+  # Output to OSM file if latitude/longitude present.
+  if ! [[ -z $LAT ]] && ! [[ -z $LONG ]]
+  then
+    ID=`expr $ID + 1`
+    echo "<node id='$ID' visible='true' lat='$LAT' lon='$LONG'>" >> $OSM
+    echo "<tag k='amenity' v='$TYPE'/>" >> $OSM
+    if ! [[ -z $NAME ]]
+      echo "<tag k='name' v='$NAME'/>" >> $OSM
+    fi
+    if ! [[ -z $ALT ]]
+      echo "<tag k='alt_name' v='$ALT'/>" >> $OSM
+    fi
+    if ! [[ -z $ADDRESS ]]
+      echo "<tag k='addr:full' v='$ADDRESS'/>" >> $OSM
+    fi
+    if ! [[ -z $PHONE ]]
+      echo "<tag k='phone' v='$PHONE'/>" >> $OSM
+    fi
+    if ! [[ -z $TOLLFREE ]]
+      echo "<tag k='phone' v='$TOLLFREE'/>" >> $OSM
+    fi
+    if ! [[ -z $EMAIL ]]
+      echo "<tag k='email' v='$EMAIL'/>" >> $OSM
+    fi
+    if ! [[ -z $FAX ]]
+      echo "<tag k='fax' v='$FAX'/>" >> $OSM
+    fi
+    if ! [[ -z $URL ]]
+      echo "<tag k='website' v='$URL'/>" >> $OSM
+    fi
+    if ! [[ -z $HOURS ]]
+      echo "<tag k='opening_hours' v='$HOURS'/>" >> $OSM
+    fi
+    if ! [[ -z $CHECKIN ]]
+      echo "<tag k='opening_hours:checkin' v='$CHECKIN'/>" >> $OSM
+    fi
+    if ! [[ -z $CHECKOUT ]]
+      echo "<tag k='opening_hours:checkout' v='$CHECKOUT'/>" >> $OSM
+    fi
+    if ! [[ -z $IMAGE ]]
+      echo "<tag k='image' v='https://commons.wikimedia.org/wiki/File:$IMAGE'/>" >> $OSM
+    fi
+    if ! [[ -z $PRICE ]]
+      echo "<tag k='price' v='$PRICE'/>" >> $OSM
+    fi
+    if ! [[ -z $DESCRIPTION ]]
+      echo "<tag k='note' v='$DESCRIPTION'/>" >> $OSM
+    fi
+    echo "</node>\n" >> $OSM
+  fi
 
   fi
 done < $TMPFILE

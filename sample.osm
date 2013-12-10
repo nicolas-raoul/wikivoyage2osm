@@ -1,13 +1,13 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <osm version='0.5' generator='wikivoyage2osm'>
   <node id='-1' visible='true' lat='41.890121' lon='12.492265'>
-    <tag k='name' v='place01'/>
-    <tag k='note' v='place01'/>
     <tag k='amenity' v='restaurant'/>
-  </node>
-  <node id='-2' visible='true' lat='41.892241' lon='12.489031'>
-    <tag k='name' v='place02'/>
-    <tag k='note' v='place02'/>
-    <tag k='tourism' v='museum'/>
+    <tag k='name' v='Pekin Garden'/>
+    <tag k='note' v='Friendly place, try the dumplings'/>
+    <tag k='opening_hours' v=''/>
+    <tag k='website' v=''/>
+    <tag k='phone' v=''/>
+    <tag k='fax' v=''/>
+    <tag k='email' v=''/>
   </node>
 </osm>
