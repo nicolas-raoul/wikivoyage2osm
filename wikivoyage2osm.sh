@@ -6,6 +6,8 @@
 # Reference: https://en.wikivoyage.org/wiki/Wikivoyage:Listings
 # To make URLs clickable in CSV files, search for 'http.*' and replace with '=HYPERLINK("&")' as per https://forum.openoffice.org/en/forum/viewtopic.php?f=9&t=18313#p83972
 #
+# Usage ./wikivoyage.sh enwikivoyage-20131130-pages-articles.xml
+#
 # License: GNU-GPLv3
 # Website: https://github.com/nicolas-raoul/wikivoyage2osm
 # Tracker: https://github.com/nicolas-raoul/wikivoyage2osm/issues
@@ -16,8 +18,7 @@
 ####################################################
 
 # Target file (unit test, or whole Wikivoyage).
-#DESTINATION=rattanakosin
-DESTINATION=enwikivoyage-20131130-pages-articles
+DESTINATION=${1:-rattanakosin.xml}
 
 # Whether to validate the Wikivoyage content
 # Invalid items are logged in invalid-* files in the same directory.
@@ -96,7 +97,7 @@ fi
 
 # Transform the data into one POI or title per line.
 POIS=`mktemp`
-cat $DESTINATION.xml |\
+cat $DESTINATION |\
   tr '\n' ' ' |\
   sed -e "s/{{/\n{{/g" | sed -e "s/}}/}}\n/g" |\
   sed -e "s/<title>/\n<title>/g" | sed -e "s/<\/title>/<\/title>\n/g" |\
