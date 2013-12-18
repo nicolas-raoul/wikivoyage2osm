@@ -96,6 +96,9 @@ fi
 
 # Transform the data into one POI or title per line.
 POIS=`mktemp`
+#DESTINATION_FILE=`readlink -f $DESTINATION.xml`
+#DESTINATION_FILE=`realpath $DESTINATION.xml`
+#cat $DESTINATION_FILE |\
 cat $DESTINATION.xml |\
   tr '\n' ' ' |\
   sed -e "s/{{/\n{{/g" | sed -e "s/}}/}}\n/g" |\
