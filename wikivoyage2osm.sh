@@ -98,13 +98,16 @@ fi
 # Transform the data into one POI or title per line.
 POIS=`mktemp`
 #DESTINATION_FILE=`readlink -f $DESTINATION.xml`
-DESTINATION_FILE=`realpath $DESTINATION` # TODO Must do: apt-get install realpath
+DESTINATION_FILE=`realpath $DESTINATION` # TODO Use "readlink -f" instead (installed by default on Ubuntu). Or automatically do: apt-get install realpath
 cat $DESTINATION_FILE |\
   tr '\n' ' ' |\
-  sed -e "s/{{/\n{{/g" | sed -e "s/}}/}}\n/g" |\
-  sed -e "s/<title>/\n<title>/g" | sed -e "s/<\/title>/<\/title>\n/g" |\
+  awk -vRS='{{' -vORS='\n{{' 1 |\
+  awk -vRS='}}' -vORS='\n}}' 1 |\
+  awk -vRS='<title>' -vORS='\n<title>' 1 |\
+  awk -vRS='</title>' -vORS='\n</title>' 1 |\
   grep "{{listing|\|{{listing |{{do|\|{{do \|{{see|\|{{see \|{{buy|\|{{buy \|{{drink|\|{{drink \|{{eat|\|{{eat \|{{sleep|\|{{sleep \|<title>" \
   > $POIS
+echo "POIs written to $POIS"
 
 # Process each line (POI or title).
 ID=0
