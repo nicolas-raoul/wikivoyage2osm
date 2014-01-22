@@ -22,11 +22,11 @@ DESTINATION=${1:-rattanakosin.xml}
 
 # Whether to validate the Wikivoyage content
 # Invalid items are logged in invalid-* files in the same directory.
-VALIDATE=YES # YES or NO
+VALIDATE=NO # YES or NO
 
 # Whether to generate CSV and OSM files
 GENERATE_CSV=YES # YES or NO
-GENERATE_OSM=YES # YES or NO
+GENERATE_OSM=NO # YES or NO
 
 ####################################################
 # Settings end
@@ -64,7 +64,7 @@ fi
 if [[ $GENERATE_CSV == "YES" ]]
 then
   CSV=$DESTINATION.csv
-  echo "TYPE;NAME;ALT;ADDRESS;DIRECTIONS;PHONE;TOLLFREE;EMAIL;FAX;URL;HOURS;CHECKIN;CHECKOUT;IMAGE;PRICE;LAT;LON;CONTENT" > $CSV
+  echo "TITLE;TYPE;NAME;ALT;ADDRESS;DIRECTIONS;PHONE;TOLLFREE;EMAIL;FAX;URL;HOURS;CHECKIN;CHECKOUT;IMAGE;PRICE;LAT;LON;CONTENT" > $CSV
 fi
 
 if [[ $VALIDATE == "YES" ]]
@@ -206,7 +206,7 @@ while read LINE; do
   
     if [[ "$GENERATE_CSV" == "YES" ]]
     then
-      echo "\"$TYPE\";\"$NAME\";\"$ALT\";\"$ADDRESS\";\"$DIRECTIONS\";\"$PHONE\";\"$TOLLFREE\";\"$EMAIL\";\"$FAX\";\"$URL\";\"$HOURS\";\"$CHECKIN\";\"$CHECKOUT\";\"$IMAGE\";\"$PRICE\";\"$LAT\";\"$LONG\";\"$CONTENT\"" >> $CSV
+      echo "\"$TITLE\";\"$TYPE\";\"$NAME\";\"$ALT\";\"$ADDRESS\";\"$DIRECTIONS\";\"$PHONE\";\"$TOLLFREE\";\"$EMAIL\";\"$FAX\";\"$URL\";\"$HOURS\";\"$CHECKIN\";\"$CHECKOUT\";\"$IMAGE\";\"$PRICE\";\"$LAT\";\"$LONG\";\"$CONTENT\"" >> $CSV
     fi
 
     if [[ "$GENERATE_OSM" == "YES" ]]
@@ -319,4 +319,7 @@ while read LINE; do
   fi
 done < $POIS
 
-echo "</osm>" >> $OSM
+if [[ $GENERATE_OSM == "YES" ]]
+then
+  echo "</osm>" >> $OSM
+fi
