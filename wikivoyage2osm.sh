@@ -22,11 +22,11 @@ DESTINATION=${1:-rattanakosin.xml}
 
 # Whether to validate the Wikivoyage content
 # Invalid items are logged in invalid-* files in the same directory.
-VALIDATE=NO # YES or NO
+VALIDATE=YES # YES or NO
 
 # Whether to generate CSV and OSM files
 GENERATE_CSV=YES # YES or NO
-GENERATE_OSM=NO # YES or NO
+GENERATE_OSM=YES # YES or NO
 
 ####################################################
 # Settings end
@@ -103,6 +103,7 @@ cat $DESTINATION |\
   sed -e "s/<title>/\n<title>/g" | sed -e "s/<\/title>/<\/title>\n/g" |\
   grep "{{listing|\|{{listing |{{do|\|{{do \|{{see|\|{{see \|{{buy|\|{{buy \|{{drink|\|{{drink \|{{eat|\|{{eat \|{{sleep|\|{{sleep \|<title>" \
   > $POIS
+  # TODO filter out "{{see also" which is an unrelated template.
 
 # Process each line (POI or title).
 ID=0
@@ -140,7 +141,7 @@ while read LINE; do
     CONTENT=`echo "$LINE" | sed -e "s/.*content[[:space:]]*=[[:space:]]*\([^}]*\).*/\1/" | grep -v "{{" | sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$//g'`
     
     # Check attributes validity
-    if [[ "$VALIDATION" == "YES" ]]
+    if [[ "$VALIDATE" == "YES" ]]
     then
       if ! [[ $TYPE =~ $REGEX_TYPE ]]
       then 
