@@ -1,0 +1,5 @@
+enwikivoyage-*
+invalid-*
+*.csv
+*.osm
+nohup.out
