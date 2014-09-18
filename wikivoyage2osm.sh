@@ -12,7 +12,7 @@
 # Website: https://github.com/nicolas-raoul/wikivoyage2osm
 # Tracker: https://github.com/nicolas-raoul/wikivoyage2osm/issues
 # Results: https://sourceforge.net/p/wikivoyage
-
+set -x
 ####################################################
 # Settings begin
 ####################################################
@@ -212,7 +212,9 @@ while read LINE; do
   
     if [[ "$GENERATE_CSV" == "YES" ]]
     then
-      echo "\"$TITLE\";\"$TYPE\";\"$NAME\";\"$ALT\";\"$ADDRESS\";\"$DIRECTIONS\";\"$PHONE\";\"$TOLLFREE\";\"$EMAIL\";\"$FAX\";\"$URL\";\"$HOURS\";\"$CHECKIN\";\"$CHECKOUT\";\"$IMAGE\";\"$PRICE\";\"$LAT\";\"$LONG\";\"$CONTENT\"" >> $CSV
+      CSVLINE="\"$TITLE\";\"$TYPE\";\"$NAME\";\"$ALT\";\"$ADDRESS\";\"$DIRECTIONS\";\"$PHONE\";\"$TOLLFREE\";\"$EMAIL\";\"$FAX\";\"$URL\";\"$HOURS\";\"$CHECKIN\";\"$CHECKOUT\";\"$IMAGE\";\"$PRICE\";\"$LAT\";\"$LONG\";\"$CONTENT\""
+      # Unescape &amp; back to & because no need to escape ampersands in CSV.
+      echo "$CSVLINE" | sed -e "s/&amp;/\&/g" >> $CSV
     fi
 
     if [[ "$GENERATE_OSM" == "YES" ]]
