@@ -12,7 +12,7 @@
 # Website: https://github.com/nicolas-raoul/wikivoyage2osm
 # Tracker: https://github.com/nicolas-raoul/wikivoyage2osm/issues
 # Results: https://sourceforge.net/p/wikivoyage
-set -x
+
 ####################################################
 # Settings begin
 ####################################################
@@ -22,11 +22,12 @@ DESTINATION=${1:-rattanakosin.xml}
 
 # Whether to validate the Wikivoyage content
 # Invalid items are logged in invalid-* files in the same directory.
-VALIDATE=YES # YES or NO
+VALIDATE=NO # YES or NO
 
 # Whether to generate CSV and OSM files
-GENERATE_CSV=YES # YES or NO
-GENERATE_OSM=YES # YES or NO
+GENERATE_CSV=NO # YES or NO
+GENERATE_OSM=NO # YES or NO
+GENERATE_RDF=YES # YES or NO
 
 ####################################################
 # Settings end
@@ -55,18 +56,6 @@ REGEX_HOURS="^(${REGEX_TIMESPAN}(, ${REGEX_TIMESPAN})*|24 hours daily)$" # https
 REGEX_CHECKIN="^${TIME}$"
 
 # Initialize output.
-if [[ $GENERATE_OSM == "YES" ]]
-then
-  OSM=$DESTINATION.osm
-  echo "<?xml version='1.0' encoding='UTF-8'?>" > $OSM
-  echo "<osm version='0.5' generator='wikivoyage2osm'>" >> $OSM
-fi
-if [[ $GENERATE_CSV == "YES" ]]
-then
-  CSV=$DESTINATION.csv
-  echo "TITLE;TYPE;NAME;ALT;ADDRESS;DIRECTIONS;PHONE;TOLLFREE;EMAIL;FAX;URL;HOURS;CHECKIN;CHECKOUT;IMAGE;PRICE;LAT;LON;CONTENT" > $CSV
-fi
-
 if [[ $VALIDATE == "YES" ]]
 then
   INVALID_TYPE=invalid-type.log
@@ -93,6 +82,22 @@ then
   > $INVALID_LATLONG
   > $INVALID_HOURS
   > $INVALID_CHECKINOUT
+fi
+if [[ $GENERATE_CSV == "YES" ]]
+then
+  CSV=$DESTINATION.csv
+  echo "TITLE;TYPE;NAME;ALT;ADDRESS;DIRECTIONS;PHONE;TOLLFREE;EMAIL;FAX;URL;HOURS;CHECKIN;CHECKOUT;IMAGE;PRICE;LAT;LON;CONTENT" > $CSV
+fi
+if [[ $GENERATE_OSM == "YES" ]]
+then
+  OSM=$DESTINATION.osm
+  echo "<?xml version='1.0' encoding='UTF-8'?>" > $OSM
+  echo "<osm version='0.5' generator='wikivoyage2osm'>" >> $OSM
+fi
+if [[ $GENERATE_RDF == "YES" ]]
+then
+  RDF=$DESTINATION.rdf
+  echo "<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#' xmlns:schema='http://schema.org/'>" > $RDF
 fi
 
 # Transform the data into one POI or title per line.
@@ -217,7 +222,7 @@ while read LINE; do
       echo "$CSVLINE" | sed -e "s/&amp;/\&/g" >> $CSV
     fi
 
-    if [[ "$GENERATE_OSM" == "YES" ]]
+    if [[ "$GENERATE_OSM" == "YES" ]] || [[ "$GENERATE_RDF" == "YES" ]]
     then
       # Escape single quotes in values so that they can be used as XML attribute values.
       LAT=`echo "$LAT" | sed -e "s/'/\&quot;/g"`
@@ -236,9 +241,12 @@ while read LINE; do
       IMAGE=`echo "$IMAGE" | sed -e "s/'/\&quot;/g"`
       PRICE=`echo "$PRICE" | sed -e "s/'/\&quot;/g"`
       CONTENT=`echo "$CONTENT" | sed -e "s/'/\&quot;/g"`
+    fi
     
-      # Output to OSM file if latitude/longitude present.
-      if ! [[ -z $LAT ]] && ! [[ -z $LONG ]]
+    # Output to OSM file if latitude/longitude present.
+    if [[ "$GENERATE_OSM" == "YES" ]]
+    then
+      if ! [[ -z $LAT ]] && ! [[ -z $LONG ]] # TODO integrate into "if" above
       then
         ID=`expr $ID + 1`
         echo "<node id='$ID' visible='true' lat='$LAT' lon='$LONG'>" >> $OSM
@@ -324,10 +332,76 @@ while read LINE; do
         echo "</node>" >> $OSM
       fi
     fi
-  fi
+
+    if [[ "$GENERATE_RDF" == "YES" ]]
+    then
+      UUID=$(cat /proc/sys/kernel/random/uuid)
+      case "$TYPE" in
+        "listing")
+          #echo "<tag k='tourism' v='information'/>" >> $RDF
+        ;;
+        "do")
+          #echo "<tag k='tourism' v='attraction'/>" >> $RDF # http://wiki.openstreetmap.org/wiki/Key:tourism Must emcompass sport activities, cinema, theme parks.
+        ;;
+        "see")
+          #echo "<tag k='tourism' v='museum'/>" >> $RDF # http://wiki.openstreetmap.org/wiki/Key:tourism Often museums, the icon also kind of apply for outdoor sights.
+        ;;
+        "buy")
+          #echo "<tag k='shop' v='supermarket'/>" >> $RDF # http://wiki.openstreetmap.org/wiki/Key:shop amenity:marketplace could apply too, but the icon for supermarket is much more recognizable.
+        ;;
+        "drink")
+          #echo "<tag k='amenity' v='bar'/>" >> $RDF # http://wiki.openstreetmap.org/wiki/Key:amenity
+        ;;
+        "eat")
+          # See http://schema.org/FoodEstablishment
+          echo "<rdf:Description rdf:nodeID='N$UUID'>" >> $RDF
+          echo "<rdf:type rdf:resource='http://schema.org/Restaurant'/>" >> $RDF
+          echo "<schema:name>$NAME</schema:name>" >> $RDF
+          if ! [[ -z $ALT ]]; then
+            echo "<schema:alternateName>$ALT</schema:alternateName>" >> $RDF
+          fi
+          if ! [[ -z $ADDRESS ]]; then
+            echo "<schema:address>$ADDRESS</schema:address>" >> $RDF
+          fi
+          if ! [[ -z $PHONE ]]; then
+            echo "<schema:telephone>$PHONE</schema:telephone>" >> $RDF
+          fi
+          if ! [[ -z $TOLLFREE ]]; then
+            echo "<schema:telephone>$TOLLFREE</schema:telephone>" >> $RDF
+          fi
+          if ! [[ -z $EMAIL ]]; then
+            echo "<schema:email>$EMAIL</schema:email>" >> $RDF
+          fi
+          if ! [[ -z $FAX ]]; then
+            echo "<schema:faxNumber>$FAX</schema:faxNumber>" >> $RDF
+          fi
+          if ! [[ -z $URL ]]; then
+            echo "<schema:url>$URL</schema:url>" >> $RDF
+          fi
+          if ! [[ -z $IMAGE ]]; then
+            echo "<schema:image>https://commons.wikimedia.org/wiki/File:$IMAGE</schema:image>" >> $OSM
+          fi
+          if ! [[ -z $PRICE ]]; then
+            echo "<schema:priceRange>$PRICE</schema:priceRange>" >> $RDF
+          fi
+          if ! [[ -z $CONTENT ]]; then
+            echo "<schema:description>$CONTENT</schema:description>" >> $RDF
+          fi
+          echo "</rdf:Description>" >> $RDF
+        ;;
+        "sleep")
+          #echo "<tag k='amenity' v='hotel'/>" >> $RDF # http://wiki.openstreetmap.org/wiki/Key:tourism
+        ;;
+      esac
+    fi
+  fi # Title or POI
 done < $POIS
 
 if [[ $GENERATE_OSM == "YES" ]]
 then
   echo "</osm>" >> $OSM
+fi
+if [[ $GENERATE_RDF == "YES" ]]
+then
+  echo "</rdf:RDF>" >> $RDF
 fi
