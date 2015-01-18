@@ -22,12 +22,12 @@ DESTINATION=${1:-rattanakosin.xml}
 
 # Whether to validate the Wikivoyage content
 # Invalid items are logged in invalid-* files in the same directory.
-VALIDATE=NO # YES or NO
+VALIDATE=YES # YES or NO
 
 # Whether to generate CSV and OSM files
-GENERATE_CSV=NO # YES or NO
+GENERATE_CSV=YES # YES or NO
 GENERATE_OSM=NO # YES or NO
-GENERATE_RDF=YES # YES or NO
+GENERATE_RDF=NO # YES or NO
 
 ####################################################
 # Settings end
@@ -47,7 +47,7 @@ REGEX_TOLLFREE='^\+?[-0-9 ]+$' # Same as above but + is not required as toll fre
 REGEX_TOLLFREE_STRICT='^(\+[0-9 ]+ )?[-0-9]+$'
 REGEX_EMAIL_CHAR='[[:alnum:]!#\$%&'\''\*\+/=?^_\`{|}~-]' # http://stackoverflow.com/a/14172402
 REGEX_EMAIL="^${REGEX_EMAIL_CHAR}+(\.${REGEX_EMAIL_CHAR}+)*@([[:alnum:]]([[:alnum:]-]*[[:alnum:]])?\.)+[[:alnum:]]([[:alnum:]-]*[[:alnum:]])?$"
-REGEX_URL='^((https?|ftp|file):)?//[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]$' # http://stackoverflow.com/a/3184819 plus no-protocol
+REGEX_URL='^((https?|ftp|file):)?//[-A-Za-z0-9\+&@#/%?=~_|!:,.;]+$' # http://stackoverflow.com/a/3184819 plus no-protocol
 REGEX_LAT='^[-+]?([1-8]?[0-9](\.[0-9]+)?|90(\.0+)?)$' # http://stackoverflow.com/a/18690202
 REGEX_LONG='^[-+]?(180(\.0+)?|((1[0-7][0-9])|([1-9]?[0-9]))(\.[0-9]+)?)$' # http://stackoverflow.com/a/18690202
 REGEX_TIME='(1?[0-9](:[0-9]{2})?[A|P]M|[012][0-9]:[0-9]{2}|noon|midnight)'
@@ -97,7 +97,10 @@ fi
 if [[ $GENERATE_RDF == "YES" ]]
 then
   RDF=$DESTINATION.rdf
-  echo "<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#' xmlns:schema='http://schema.org/'>" > $RDF
+  echo "<?xml version='1.0'?>" > $RDF
+  echo "<rdf:RDF" >> $RDF
+  echo "  xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'" >> $RDF
+  echo "  xmlns:schema='http://schema.org/'>" >> $RDF
 fi
 
 # Transform the data into one POI or title per line.
@@ -116,15 +119,18 @@ cat $DESTINATION_FILE |\
   echo "POIs written to $POIS"
 
 # Process each line (POI or title).
+WIKIDATA_ITEM=""
 ID=0
 while read LINE; do
   if [[ "$LINE" =~ $REGEX_TITLE ]]
   then
+    # This line is a destination
     TITLE=`echo "$LINE" | sed -e "s/<title>//g" -e "s/<\/title>//g"`
     echo "$TITLE"
     LINK_TITLE=`echo "$TITLE" | tr " " "_"`
+    WIKIDATA_ITEM="" # Reset Wikidata item, will be searched at first POI
   else
-
+    # This line is a POI.
     # Extract all data from the Wikivoyage POI listing
     # Explanation:
     # Get the value of the attribute we want: sed -e "s/.*name[[:space:]]*=[[:space:]]*\([^|]*\).*/\1/"
@@ -190,7 +196,7 @@ while read LINE; do
       fi
       if ! [[ -z $URL ]] && ! [[ $URL =~ $REGEX_URL ]]
       then 
-        echo "# $EDIT_PREFIX$LINK_TITLE$EDIT_MIDDLE$TITLE$EDIT_SUFFIX $URL" >> $INVALID_URL
+        echo "# $EDIT_PREFIX$LINK_TITLE$EDIT_MIDDLE$TITLE$EDIT_SUFFIX <nowiki>$URL</nowiki>" >> $INVALID_URL
       fi
       if ! [[ -z $LAT ]] && ! [[ $LAT =~ $REGEX_LAT ]]
       then 
@@ -375,17 +381,31 @@ while read LINE; do
           if ! [[ -z $FAX ]]; then
             echo "<schema:faxNumber>$FAX</schema:faxNumber>" >> $RDF
           fi
+
+#TODO lat/lon 
+
           if ! [[ -z $URL ]]; then
             echo "<schema:url>$URL</schema:url>" >> $RDF
           fi
           if ! [[ -z $IMAGE ]]; then
-            echo "<schema:image>https://commons.wikimedia.org/wiki/File:$IMAGE</schema:image>" >> $OSM
+            echo "<schema:image>https://commons.wikimedia.org/wiki/File:$IMAGE</schema:image>" >> $RDF
           fi
           if ! [[ -z $PRICE ]]; then
             echo "<schema:priceRange>$PRICE</schema:priceRange>" >> $RDF
           fi
           if ! [[ -z $CONTENT ]]; then
             echo "<schema:description>$CONTENT</schema:description>" >> $RDF
+          fi
+          if [[ $WIKIDATA_ITEM == "" ]]; then
+            WIKIDATA=`wget --quiet -O - "http://www.wikidata.org/w/api.php?action=wbgetentities&sites=enwikivoyage&titles=Abbeville&format=xml&props="`
+#            if [[ $WIKIDATA == *entity id* ]]; then
+#              WIKIDATA_ITEM=`echo $WIKIDATA | sed -e "s/.*id=\"//" | sed -e "s/\".*//"`
+#            else
+#              WIKIDATA_ITEM="NONE"
+#            fi
+          fi
+          if [[ $WIKIDATA_ITEM != "NONE" ]]; then
+            TODO echo "<schema:description>$CONTENT</schema:description>" >> $RDF
           fi
           echo "</rdf:Description>" >> $RDF
         ;;
