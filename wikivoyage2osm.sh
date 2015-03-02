@@ -109,11 +109,12 @@ POIS=`mktemp`
 DESTINATION_FILE=`realpath $DESTINATION` # TODO Use "readlink -f" instead (installed by default on Ubuntu). Or automatically do: apt-get install realpath
 cat $DESTINATION_FILE |\
   tr '\n' ' ' |\
+  sed -e 's/{{flag|[^}]*}}[[:space:]]*{{listing/{{legation/g' |\
   awk -vRS='{{' -vORS='\n{{' 1 |\
   awk -vRS='}}' -vORS='\n}}' 1 |\
   awk -vRS='<title>' -vORS='\n<title>' 1 |\
   awk -vRS='</title>' -vORS='\n</title>' 1 |\
-  grep "{{listing|\|{{listing |{{do|\|{{do \|{{see|\|{{see \|{{buy|\|{{buy \|{{drink|\|{{drink \|{{eat|\|{{eat \|{{sleep|\|{{sleep \|<title>" \
+  grep "{{listing|\|{{listing |{{do|\|{{do \|{{see|\|{{see \|{{buy|\|{{buy \|{{drink|\|{{drink \|{{eat|\|{{eat \|{{sleep|\|{{sleep \|{{legation|\|{{legation |\|<title>" \
   > $POIS
   # TODO filter out "{{see also" which is an unrelated template.
   echo "POIs written to $POIS"

@@ -16,3 +16,5 @@ Formats:
 Like [Wikivoyage](https://en.wikivoyage.org), the data is licensed Creative Commons Attribution-ShareAlike 3.0 Licensed, contributors can be found in each article's history.
 
 If you like this data, please contribute back by adding latitudes/longitude to listings that don't have them yet, thanks :-)
+
+[Sister project for the Russian Wikivoyage, in Java](https://github.com/baturin/wikivoyage-listings/tree/master/src/test/abaturin)
