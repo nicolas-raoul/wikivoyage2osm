@@ -92,7 +92,7 @@ if [[ $GENERATE_OSM == "YES" ]]
 then
   OSM=$DESTINATION.osm
   echo "<?xml version='1.0' encoding='UTF-8'?>" > $OSM
-  echo "<osm version='0.5' generator='wikivoyage2osm'>" >> $OSM
+  echo "<osm version='0.6' generator='wikivoyage2osm'>" >> $OSM
 fi
 if [[ $GENERATE_RDF == "YES" ]]
 then
