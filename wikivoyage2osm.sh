@@ -256,7 +256,7 @@ while read LINE; do
       if ! [[ -z $LAT ]] && ! [[ -z $LONG ]] # TODO integrate into "if" above
       then
         ID=`expr $ID + 1`
-        echo "<node id='$ID' visible='true' lat='$LAT' lon='$LONG'>" >> $OSM
+        echo "<node id='$ID' visible='true' lat='$LAT' lon='$LONG' version='1'>" >> $OSM
         case "$TYPE" in
           "listing")
             echo "<tag k='tourism' v='information'/>" >> $OSM # http://wiki.openstreetmap.org/wiki/Key:tourism Unspecified listings are often tourism information, even though not always.
