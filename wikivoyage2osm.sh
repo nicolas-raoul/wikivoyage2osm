@@ -22,7 +22,7 @@ DESTINATION=${1:-rattanakosin.xml}
 
 # Whether to validate the Wikivoyage content
 # Invalid items are logged in invalid-* files in the same directory.
-VALIDATE=YES # YES or NO
+VALIDATE=NO # YES or NO
 
 # Whether to generate CSV and OSM files
 GENERATE_CSV=YES # YES or NO
@@ -114,9 +114,9 @@ cat $DESTINATION_FILE |\
   awk -vRS='}}' -vORS='\n}}' 1 |\
   awk -vRS='<title>' -vORS='\n<title>' 1 |\
   awk -vRS='</title>' -vORS='\n</title>' 1 |\
-  grep "{{listing|\|{{listing |{{do|\|{{do \|{{see|\|{{see \|{{buy|\|{{buy \|{{drink|\|{{drink \|{{eat|\|{{eat \|{{sleep|\|{{sleep \|{{legation|\|{{legation |\|<title>" \
+  grep "{{listing|\|{{listing |{{do|\|{{do \|{{see|\|{{see \|{{buy|\|{{buy \|{{drink|\|{{drink \|{{eat|\|{{eat \|{{sleep|\|{{sleep \|{{legation|\|{{legation |\|<title>" |\
+  grep -v "{{see also" \
   > $POIS
-  # TODO filter out "{{see also" which is an unrelated template.
   echo "POIs written to $POIS"
 
 # Process each line (POI or title).
